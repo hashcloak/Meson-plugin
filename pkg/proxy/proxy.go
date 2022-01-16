@@ -161,7 +161,7 @@ func (k *Currency) sendTransaction(ticker string, txHex string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	dec := codec.NewDecoderBytes(bodyBytes, &codec.JsonHandle{})
+	dec := codec.NewDecoderBytes(bodyBytes, &jsonHandle)
 	err = dec.Decode(&resp)
 	if err != nil {
 		return "", err
@@ -199,6 +199,9 @@ func New(cfg *config.Config) (*Currency, error) {
 
 	// Log to a file.
 	level, err := stringToLogLevel(cfg.LogLevel)
+	if err != nil {
+		return nil, err
+	}
 	logFile := path.Join(cfg.LogDir, fmt.Sprintf("meson-go.%d.log", os.Getpid()))
 	f, err := os.Create(logFile)
 	if err != nil {

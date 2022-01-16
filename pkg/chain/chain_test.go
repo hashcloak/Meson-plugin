@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"bytes"
 	"encoding/json"
 	"testing"
 )
@@ -50,7 +49,10 @@ func TestEthereumChainTxnInBody(t *testing.T) {
 	txn := `"TXN"`
 	postRequest, _ := chainInterface.NewRequest("URL", txn)
 	var expectedValue ethRequest
-	json.Unmarshal(postRequest.Body, &expectedValue)
+	err := json.Unmarshal(postRequest.Body, &expectedValue)
+	if err != nil {
+		t.Fatalf("err unmarshal: %v\n", err)
+	}
 	if len(expectedValue.Params) != 1 {
 		t.Fatalf("Length expected to be %d, got %d", 1, len(expectedValue.Params))
 	}
@@ -69,7 +71,7 @@ func TestCosmosChainURLEmpty(t *testing.T) {
 func TestCosmosChainBody(t *testing.T) {
 	chainInterface, _ := GetChain("TBNB")
 	postRequest, _ := chainInterface.NewRequest("URL", "")
-	if bytes.Compare(postRequest.Body, []byte{}) != 0 {
+	if len(postRequest.Body) > 0 {
 		t.Fatalf("Body should be empty for cosmos request")
 	}
 }

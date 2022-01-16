@@ -28,16 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	ethSendVersion = 0
-)
-
-type ethSendRequest struct {
-	Version int
-	Tx      string
-	ChainID int
-}
-
 func TestProxy(t *testing.T) {
 	assert := assert.New(t)
 

@@ -23,11 +23,6 @@ import (
 	"github.com/hashcloak/Meson-plugin/pkg/common"
 )
 
-const (
-	// currency tickers are three characters in length
-	tickerLen = 3
-)
-
 //export NewRequest
 func NewRequest(ticker, txHex *C.char) *C.char {
 	myTicker := C.GoString(ticker)

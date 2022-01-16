@@ -72,7 +72,7 @@ func RequestFromJson(expectedTicker string, rawRequest []byte) (*CurrencyRequest
 func (c *CurrencyRequest) ToJson() []byte {
 	var request []byte
 	enc := codec.NewEncoderBytes(&request, &jsonHandle)
-	enc.Encode(c)
+	_ = enc.Encode(c)
 	return request
 }
 
@@ -93,7 +93,7 @@ func NewResponse(message string, errMsg string) *CurrencyResponse {
 func (c *CurrencyResponse) ToJson() []byte {
 	var response []byte
 	enc := codec.NewEncoderBytes(&response, &jsonHandle)
-	enc.Encode(c)
+	_ = enc.Encode(c)
 	return response
 }
 
