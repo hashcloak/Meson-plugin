@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -32,15 +33,11 @@ import (
 	"gopkg.in/op/go-logging.v1"
 )
 
-var logFormat = logging.MustStringFormatter(
-	"%{level:.4s} %{id:03x} %{message}",
-)
-
-const (
-	// ResponseSuccess : Indicates whether a Response was successful
-	ResponseSuccess = 0
-	// ResponseError : Indicates whether a Response was unsuccessful
-	ResponseError = 1
+var (
+	jsonHandle codec.JsonHandle
+	logFormat  = logging.MustStringFormatter(
+		"%{level:.4s} %{id:03x} %{message}",
+	)
 )
 
 func stringToLogLevel(level string) (logging.Level, error) {
@@ -83,6 +80,19 @@ type Currency struct {
 	rpcURL  string
 }
 
+type RPCError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+type RPCResponse struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"`
+	Error   *RPCError       `json:"error,omitempty"`
+	Result  string          `json:"result,omitempty"`
+}
+
 // GetParameters : Returns params from Currency struct
 func (k *Currency) GetParameters() map[string]string {
 	return k.params
@@ -96,16 +106,15 @@ func (k *Currency) OnRequest(id uint64, payload []byte, hasSURB bool) ([]byte, e
 	req, err := common.RequestFromJson(k.ticker, payload)
 	if err != nil {
 		k.log.Debug("Failed to send currency transaction request: (%v)", err)
-		return common.NewResponse(ResponseError, err.Error()).ToJson(), nil
+		return common.RespondFailure(err), nil
 	}
 
-	err = k.sendTransaction(req.Ticker, req.Tx)
+	hash, err := k.sendTransaction(req.Ticker, req.Tx)
 	if err != nil {
 		k.log.Debug("Failed to send currency transaction request: (%v)", err)
-		return common.NewResponse(ResponseError, err.Error()).ToJson(), nil
+		return common.RespondFailure(err), nil
 	}
-	message := "success"
-	return common.NewResponse(ResponseSuccess, message).ToJson(), nil
+	return common.RespondSuccess("Tx hash: " + hash), nil
 }
 
 // Halt : Stops the plugin
@@ -113,18 +122,18 @@ func (k *Currency) Halt() {
 
 }
 
-func (k *Currency) sendTransaction(ticker string, txHex string) error {
+func (k *Currency) sendTransaction(ticker string, txHex string) (string, error) {
 	k.log.Debug("sendTransaction")
 
 	// Get supported chain
 	c, err := chain.GetChain(ticker)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Create a new appropriately marshalled request
 	postRequest, err := c.NewRequest(k.rpcURL, txHex)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	bodyReader := bytes.NewReader(postRequest.Body)
@@ -132,7 +141,7 @@ func (k *Currency) sendTransaction(ticker string, txHex string) error {
 	// create an http request
 	httpReq, err := http.NewRequest("POST", postRequest.URL, bodyReader)
 	if err != nil {
-		return err
+		return "", err
 	}
 	httpReq.Close = true
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -142,11 +151,25 @@ func (k *Currency) sendTransaction(ticker string, txHex string) error {
 	client := http.Client{}
 	httpResponse, err := client.Do(httpReq)
 	if err != nil {
-		return err
+		return "", err
 	}
-	k.log.Debugf("currency RPC response status: %s", httpResponse.Status)
-
-	return nil
+	if httpResponse.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("currency RPC error status: %s", httpResponse.Status)
+	}
+	resp := RPCResponse{}
+	bodyBytes, err := io.ReadAll(httpResponse.Body)
+	if err != nil {
+		return "", err
+	}
+	dec := codec.NewDecoderBytes(bodyBytes, &codec.JsonHandle{})
+	err = dec.Decode(&resp)
+	if err != nil {
+		return "", err
+	}
+	if resp.Error != nil {
+		return "", errors.New(resp.Error.Message)
+	}
+	return resp.Result, nil
 }
 
 // New : Returns a pointer to a newly instantiated Currency struct
