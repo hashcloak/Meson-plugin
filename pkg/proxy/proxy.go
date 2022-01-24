@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -157,7 +158,7 @@ func (k *Currency) sendTransaction(ticker string, txHex string) (string, error) 
 		return "", fmt.Errorf("currency RPC error status: %s", httpResponse.Status)
 	}
 	resp := RPCResponse{}
-	bodyBytes, err := io.ReadAll(httpResponse.Body)
+	bodyBytes, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		return "", err
 	}
