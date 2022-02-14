@@ -146,6 +146,11 @@ func main() {
 	// Log to a file.
 	logFile := path.Join(logDir, fmt.Sprintf("currency.%d.log", os.Getpid()))
 	f, err := os.Create(logFile)
+	if err != nil {
+		log.Errorf("Failed to create log file '%v: %v\n'", logFile, err)
+		log.Error("Exiting")
+		os.Exit(-1)
+	}
 	logBackend := setupLoggerBackend(level, f)
 	log.SetBackend(logBackend)
 	log.Info("currency server started")
@@ -183,6 +188,9 @@ func main() {
 	http.HandleFunc("/request", _requestHandler)
 	http.HandleFunc("/parameters", _parametersHandler)
 	fmt.Printf("%s\n", socketFile)
-	server.Serve(unixListener)
+	err = server.Serve(unixListener)
+	if err != nil {
+		fmt.Println(err)
+	}
 	os.Remove(socketFile)
 }

@@ -1,4 +1,6 @@
-# Meson-plugin [![Build Status](https://travis-ci.com/hashcloak/Meson-pluging.svg?branch=master)](https://travis-ci.com/hashcloak/Meson-plugin)
+# Meson-plugin
+
+[![Go](https://github.com/hashcloak/Meson-plugin/actions/workflows/go.yml/badge.svg)](https://github.com/hashcloak/Meson-plugin/actions/workflows/go.yml)
 
 A Library for adding cryptocurrencies to Meson mixnet.
 

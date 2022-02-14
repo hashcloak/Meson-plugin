@@ -28,16 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	ethSendVersion = 0
-)
-
-type ethSendRequest struct {
-	Version int
-	Tx      string
-	ChainID int
-}
-
 func TestProxy(t *testing.T) {
 	assert := assert.New(t)
 
@@ -48,6 +38,38 @@ func TestProxy(t *testing.T) {
 Ticker = "ETH"
 RPCUser = "somerpcusername"
 RPCPass = "somepassword"
+RPCURL = "localhost:8545"
+LogDir = "%s"
+LogLevel = "DEBUG"
+`, logDir))
+	tmpfn := filepath.Join(logDir, "currency.toml")
+	err = ioutil.WriteFile(tmpfn, content, 0666)
+	assert.NoError(err)
+
+	cfg, err := config.LoadFile(tmpfn)
+	assert.NoError(err)
+	p, err := New(cfg)
+	assert.NoError(err)
+
+	hexBlob := "deadbeef"
+	currencyRequest := common.NewRequest(cfg.Ticker, hexBlob)
+	ethRequest := currencyRequest.ToJson()
+	id := uint64(123)
+	hasSURB := true
+	reply, err := p.OnRequest(id, ethRequest, hasSURB)
+	assert.NoError(err)
+
+	t.Logf("reply: %s", reply)
+}
+
+func TestProxyWithoutAuth(t *testing.T) {
+	assert := assert.New(t)
+
+	logDir, err := ioutil.TempDir("", "example")
+	assert.NoError(err)
+	defer os.RemoveAll(logDir) // clean up
+	content := []byte(fmt.Sprintf(`
+Ticker = "ETH"
 RPCURL = "localhost:8545"
 LogDir = "%s"
 LogLevel = "DEBUG"

@@ -72,27 +72,47 @@ func RequestFromJson(expectedTicker string, rawRequest []byte) (*CurrencyRequest
 func (c *CurrencyRequest) ToJson() []byte {
 	var request []byte
 	enc := codec.NewEncoderBytes(&request, &jsonHandle)
-	enc.Encode(c)
+	_ = enc.Encode(c)
 	return request
 }
 
 type CurrencyResponse struct {
-	Version    int
-	StatusCode int
-	Message    string
+	Version int
+	Message string
+	Error   string
 }
 
-func NewResponse(status int, message string) *CurrencyResponse {
+func NewResponse(message string, errMsg string) *CurrencyResponse {
 	return &CurrencyResponse{
-		Version:    CurrencyVersion,
-		StatusCode: status,
-		Message:    message,
+		Version: CurrencyVersion,
+		Message: message,
+		Error:   errMsg,
 	}
 }
 
 func (c *CurrencyResponse) ToJson() []byte {
 	var response []byte
 	enc := codec.NewEncoderBytes(&response, &jsonHandle)
-	enc.Encode(c)
+	_ = enc.Encode(c)
 	return response
+}
+
+func RespondSuccess(message string) []byte {
+	return NewResponse(message, "").ToJson()
+}
+
+func RespondFailure(err error) []byte {
+	return NewResponse("", err.Error()).ToJson()
+}
+
+func ResponseFromJson(rawResponse []byte) (string, error) {
+	resp := CurrencyResponse{}
+	dec := codec.NewDecoderBytes(rawResponse, &jsonHandle)
+	if err := dec.Decode(&resp); err != nil {
+		return "", errInvalidJson
+	}
+	if resp.Error != "" {
+		return "", errors.New(resp.Error)
+	}
+	return resp.Message, nil
 }

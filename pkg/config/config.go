@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 
 	"github.com/BurntSushi/toml"
+	"github.com/hashcloak/Meson-plugin/pkg/chain"
 )
 
 // Config is the configuration for this currency transaction proxy service.
@@ -40,11 +41,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Ticker == "" {
 		return errors.New("config: Ticker is not set")
 	}
-	if cfg.RPCUser == "" {
-		return errors.New("config: RPCUser is not set")
-	}
-	if cfg.RPCPass == "" {
-		return errors.New("config: RPCPass is not set")
+	_, err := chain.GetChain(cfg.Ticker)
+	if err != nil {
+		return err
 	}
 	if cfg.RPCURL == "" {
 		return errors.New("config: RPCURL is not set")

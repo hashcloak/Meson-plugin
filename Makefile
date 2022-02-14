@@ -1,35 +1,19 @@
-flags=.makeFlags
-VPATH=$(flags)
-$(shell mkdir -p $(flags))
+GOPATH=$(shell go env GOPATH)
 
-default: build_meson
+.PHONY: default
+default: lint test
 
-clean:
-	rm -rf $(flags)
+.PHONY: lint
+lint:
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
+	$(GOPATH)/bin/golangci-lint run -e gosec ./... --timeout 2m
+	go fmt ./...
+	go mod tidy
 
-genconfig:
-	go get -u github.com/hashcloak/genconfig
-	@touch $(flags)/$@
-
-build_meson:
-	python3 ops/build_containers.py
-	@touch $(flags)/$@
-
-testnet: build_meson genconfig
-	python3 ops/testnet.py
-	@touch $(flags)/$@
-	sleep 20
-
-integration_test: testnet
-	python3 ops/integration_test.py
-
-stop_testnet:
-	docker stack rm mixnet
-	rm $(flags)/testnet
-
-push: build_meson
-	python3 ops/push_containers.py
-	@touch $(flags)/$@
-
+.PHONY: test
 test:
-	go test ./pkg/*
+	go test ./...
+
+.PHONY: build
+build:
+	go build ./cmd/meson-plugin
