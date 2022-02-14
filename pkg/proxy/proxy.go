@@ -68,7 +68,7 @@ func setupLoggerBackend(level logging.Level, writer io.Writer) logging.LeveledBa
 	return leveler
 }
 
-// Currency :  Handles logging and RPC details. Implements the ServicePlugin interface
+// Currency : Handles logging and RPC details. Implements the ServicePlugin interface
 type Currency struct {
 	log        *logging.Logger
 	jsonHandle codec.JsonHandle
@@ -146,7 +146,9 @@ func (k *Currency) sendTransaction(ticker string, txHex string) (string, error) 
 	}
 	httpReq.Close = true
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.SetBasicAuth(k.rpcUser, k.rpcPass)
+	if k.rpcUser != "" && k.rpcPass != "" {
+		httpReq.SetBasicAuth(k.rpcUser, k.rpcPass)
+	}
 
 	// send http request
 	client := http.Client{}
